@@ -5,7 +5,7 @@ scrapes http://nytm.org/made-in-nyc/ for a list of all made in nyc startups
 """
 from urllib2 import *
 from bs4 import BeautifulSoup as BS
-import re, json, startupDAO
+import re, json, startupDAO, pymongo
 
 # crunchbase API
 API_KEY = "5eb9tz5c9yam2cc7s6akqrey"
@@ -56,6 +56,12 @@ class Startup():
 	def __init__(self, name, web_link):
 		self.name = name
 		self.web_link = web_link
+		self.crunch_url = None
+		self.hiring_link = None
+		self.image_src = None
+		self.overview = None
+		self.category = None
+		self.description = None
 
 	def set_hiring(self, hiring_link):
 		self.hiring_link = hiring_link
@@ -95,7 +101,7 @@ nyc_url = "http://nytm.org/made-in-nyc/"
 startups = get_startups(get_page(nyc_url))
 
 # use crunchbase api to get further info
-for startup in startups:
+for startup in startups[:10]:
 	search_query = "query=" + startup.web_link.replace('http://', '').replace('www.', '').rsplit('/')[0]
 	search_query += "&entity=company&field=homepage_url"
 	page = get_page("http://api.crunchbase.com/v/1/search.js?" + 
