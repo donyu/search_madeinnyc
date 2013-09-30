@@ -87,7 +87,7 @@ startups = get_startups(get_page(nyc_url))
 
 # use crunchbase api to get further info
 i = 0
-for startup in startups[:1019]:
+for startup in startups[98:101]:
 	print i
 	i += 1
 	search_query = "query=" + startup.web_link.replace('http://', '').rsplit('/')[0]
@@ -101,28 +101,46 @@ for startup in startups[:1019]:
 			if json_resp['total'] > 0:
 				result_info = json_resp['results'][0]
 				startup.set_crunchbase(result_info['category_code'], result_info['crunchbase_url'])
+				print result_info['crunchbase_url']
+			else:
+				# try different approach to search
+				search_query = "query=" + startup.web_link.replace('http://', '').replace('www','').rsplit('/')[0]
+				search_query += "&entity=company&field=homepage_url"
+				page = get_page("http://api.crunchbase.com/v/1/search.js?" + 
+						search_query + "&api_key=" + API_KEY)
+				if page:
+					# if search is successful
+					try:
+						json_resp = json.load(page)
+						if json_resp['total'] > 0:
+							result_info = json_resp['results'][0]
+							startup.set_crunchbase(result_info['category_code'], result_info['crunchbase_url'])
+							print result_info['crunchbase_url']
+						else:
+							# try different approach to search
+							search_query = "query=" + startup.name
+							search_query += "&entity=company&field=name"
+							page = get_page("http://api.crunchbase.com/v/1/search.js?" + 
+									search_query + "&api_key=" + API_KEY)
+							if page:
+								# if search is successful
+								try:
+									json_resp = json.load(page)
+									if json_resp['total'] > 0:
+										result_info = json_resp['results'][0]
+										startup.set_crunchbase(result_info['category_code'], result_info['crunchbase_url'])
+										print result_info['crunchbase_url']
+								except ValueError, e:
+									continue
+					except ValueError, e:
+						continue
 		except ValueError, e:
 			continue
-		else:
-			# try different approach to search
-			search_query = "query=" + startup.web_link.replace('http://', '').replace('www','').rsplit('/')[0]
-			search_query += "&entity=company&field=homepage_url"
-			page = get_page("http://api.crunchbase.com/v/1/search.js?" + 
-					search_query + "&api_key=" + API_KEY)
-			if page:
-				# if search is successful
-				try:
-					json_resp = json.load(page)
-					if json_resp['total'] > 0:
-						result_info = json_resp['results'][0]
-						startup.set_crunchbase(result_info['category_code'], result_info['crunchbase_url'])
-				except ValueError, e:
-					continue
 
 # now scrape crunchbase page for more info
-# for startup in startups:
-# 	if startup.crunch_url:
-# 		crunch_page = parse_crunch_page(get_page(startup.crunch_url))
+for startup in startups:
+	if startup.crunch_url:
+		crunch_page = parse_crunch_page(get_page(startup.crunch_url))
 
 # save everything into MongoDB
 connection_string = "mongodb://localhost"
